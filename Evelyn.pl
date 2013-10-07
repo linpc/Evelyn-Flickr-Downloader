@@ -76,7 +76,7 @@ sub download_photoset($)
 	$has_next_page = 0;
 	if ($in_dir == 0)
 	{
-	    if ($flickr_page =~ /<title>(.*?) - a set on Flickr<\/title>/m)
+	    if ($flickr_page =~ /<title>(.*?) - (a set on Flickr|Flickr 上的相片集)<\/title>/m)
 	    {
 		$flickr_title = $1;
 		$flickr_title =~ s/[ \/]/_/g;
@@ -91,7 +91,7 @@ sub download_photoset($)
 			open FR, '<', "$flickr_title/url.txt";
 			chomp (my $test_url = <FR>);
 			close FR;
-		    
+
 			if ($test_url eq $flickr_url)
 			{
 			    last;
@@ -150,6 +150,7 @@ sub parse_page()
 
     foreach my $line ($flickr_page)
     {
+	$line =~ s#href="/photos/[^>]+ class="title">##g;
 	while ($line =~ m#href="(/photos/[^"]+?/in/[^"]+)"#)
 	{
 	    my $href = $1;

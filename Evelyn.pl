@@ -40,20 +40,16 @@ sub main()
 {
     my $target = $_[0];
 
-    if ( -f $target)
-    {
+    if ( -f $target) {
 	open FR, '<', $target;
 	my @urls = <FR>;
 	close FR;
 
-	foreach (@urls)
-	{
+	foreach (@urls) {
 	    chomp;
 	    &download_photoset($_);
 	}
-    }
-    else
-    {
+    } else {
 	&download_photoset($target);
     }
 }
@@ -70,30 +66,24 @@ sub download_photoset($)
     # init
     $photo_count_num = 1;
 
-    while ($has_next_page)
-    {
+    while ($has_next_page) {
 	my $flickr_page = &get_content($flickr_url);
 	$has_next_page = 0;
-	if ($in_dir == 0)
-	{
-	    if ($flickr_page =~ /<title>(.*?) - (a set on Flickr|Flickr 上的相片集)<\/title>/m)
-	    {
+	if ($in_dir == 0) {
+	    if ($flickr_page =~ /<title>(.*?) - (a set on Flickr|Flickr 上的相片集)<\/title>/m) {
 		$flickr_title = $1;
 		$flickr_title =~ s/[ \/]/_/g;
 		print "title = $flickr_title\n";
 
 		my $dir_postfix = 0;
 		my $ori_flickr_title = $flickr_title;
-		while ( -e $flickr_title)
-		{
-		    if ( -f "$flickr_title/url.txt")
-		    {
+		while ( -e $flickr_title) {
+		    if ( -f "$flickr_title/url.txt") {
 			open FR, '<', "$flickr_title/url.txt";
 			chomp (my $test_url = <FR>);
 			close FR;
 
-			if ($test_url eq $flickr_url)
-			{
+			if ($test_url eq $flickr_url) {
 			    last;
 			}
 		    }
@@ -101,8 +91,7 @@ sub download_photoset($)
 		    $dir_postfix++;
 		}
 
-		if ( ! -e $flickr_title)
-		{
+		if ( ! -e $flickr_title) {
 		    mkdir $flickr_title;
 		    chdir $flickr_title;
 		    $in_dir = 1;
@@ -110,16 +99,12 @@ sub download_photoset($)
 		    open FW, '>', 'url.txt';
 		    print FW "$flickr_url\n";
 		    close FW;
-		}
-		else
-		{
+		} else {
 		    print "Find <$flickr_title>, continue to download photos...\n";
 		    chdir $flickr_title;
 		    $in_dir = 1;
 		}
-	    }
-	    else
-	    {
+	    } else {
 		print "Photoset title not found.\n";
 		return;
 	    }
@@ -129,12 +114,10 @@ sub download_photoset($)
 	# 
 	# try to find next page link
 	#
-	if ($flickr_page =~ /<span class="this-page">(\d+)<\/span>/m)
-	{
+	if ($flickr_page =~ /<span class="this-page">(\d+)<\/span>/m) {
 	    my $this_page = $1;
 	    my $next_page = $this_page + 1;
-	    if ($flickr_page =~ /<a .*?data-track="page-$next_page" href="([^"]+)"/m)
-	    {
+	    if ($flickr_page =~ /<a .*?data-track="page-$next_page" href="([^"]+)"/m) {
 		$flickr_url = "http://www.flickr.com$1";
 		$has_next_page = 1;
 	    }
@@ -148,11 +131,9 @@ sub parse_page()
 {
     my ($flickr_page, $flickr_title) = @_;
 
-    foreach my $line ($flickr_page)
-    {
+    foreach my $line ($flickr_page) {
 	$line =~ s#href="/photos/[^>]+ class="title">##g;
-	while ($line =~ m#href="(/photos/[^"]+?/in/[^"]+)"#)
-	{
+	while ($line =~ m#href="(/photos/[^"]+?/in/[^"]+)"#) {
 	    my $href = $1;
 	    $line =~ s/$href//;
 

@@ -34,120 +34,6 @@ my $VERSION = '0.1.1';
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
 my $photo_count_num = 1;
 
-&main($ARGV[0]);
-
-sub main()
-{
-    my $target = $_[0];
-
-    if ( -f $target) {
-	open FR, '<', $target;
-	my @urls = <FR>;
-	close FR;
-
-	foreach (@urls) {
-	    chomp;
-	    &download_photoset($_);
-	}
-    } else {
-	&download_photoset($target);
-    }
-}
-
-
-sub download_photoset($)
-{
-    my $flickr_url = $_[0];
-    my $in_dir = 0;
-    my $has_next_page = 1;
-    my $flickr_title = '';
-
-
-    # init
-    $photo_count_num = 1;
-
-    while ($has_next_page) {
-	my $flickr_page = &get_content($flickr_url);
-	$has_next_page = 0;
-	if ($in_dir == 0) {
-	    if ($flickr_page =~ /<title>(.*?) - (an album on Flickr|a set on Flickr)<\/title>/m) {
-		$flickr_title = $1;
-		$flickr_title =~ s/[ \/]/_/g;
-		print "title = $flickr_title\n";
-
-		my $dir_postfix = 0;
-		my $ori_flickr_title = $flickr_title;
-		while ( -e $flickr_title) {
-		    if ( -f "$flickr_title/url.txt") {
-			open FR, '<', "$flickr_title/url.txt";
-			chomp (my $test_url = <FR>);
-			close FR;
-
-			if ($test_url eq $flickr_url) {
-			    last;
-			}
-		    }
-		    $flickr_title = "$ori_flickr_title.$dir_postfix";
-		    $dir_postfix++;
-		}
-
-		if ( ! -e $flickr_title) {
-		    mkdir $flickr_title;
-		    chdir $flickr_title;
-		    $in_dir = 1;
-
-		    open FW, '>', 'url.txt';
-		    print FW "$flickr_url\n";
-		    close FW;
-		} else {
-		    print "Find <$flickr_title>, continue to download photos...\n";
-		    chdir $flickr_title;
-		    $in_dir = 1;
-		}
-	    } else {
-		print "Photoset title not found.\n";
-		return;
-	    }
-	}
-
-	print "=== Go get $flickr_url ===\n";
-	# 
-	# try to find next page link
-	#
-	if ($flickr_page =~ /<span class="this-page">(\d+)<\/span>/m) {
-	    my $this_page = $1;
-	    my $next_page = $this_page + 1;
-	    if ($flickr_page =~ /<a .*?data-track="page-$next_page" href="([^"]+)"/m) {
-		$flickr_url = "https://www.flickr.com$1";
-		$has_next_page = 1;
-	    }
-	}
-	&parse_page($flickr_page, $flickr_title);
-    }
-    chdir '..';
-}
-
-sub parse_page()
-{
-    my ($flickr_page, $flickr_title) = @_;
-
-    foreach my $line ($flickr_page) {
-	$line =~ s#href="/photos/[^>]+ class="title">##g;
-	while ($line =~ m#href="(/photos/[^"]+?/in/[^"]+)"#) {
-	    my $href = $1;
-	    $line =~ s/$href//;
-
-	    $href =~ s#/in/#/sizes/o/in/#;
-	    $href = "https://www.flickr.com$href";
-	    print "$flickr_title: ";
-	    &parse_get_img($href);
-
-	    sleep(1);
-	}
-    }
-}
-
-
 sub get_content($)
 {
     my $url = $_[0];
@@ -162,12 +48,11 @@ sub get_content($)
     my $content = $response->content();
 }
 
-
 sub parse_get_img($)
 {
     my $url = $_[0];
 
-    my $content = &get_content($url);
+    my $content = get_content($url);
 #    $contents =~ s/\n//g;
 #    my ($img_url) = $content =~ /<img src="([^"]+_o.jpg)"/m;
     my ($img_url) = $content =~ /<img src="(https:\/\/farm[^"]+\.jpg)"/m;
@@ -176,3 +61,116 @@ sub parse_get_img($)
     $photo_count_num++;
     system 'wget', '-nv', '-c', '-nc', "$img_url";
 }
+
+sub parse_page(@)
+{
+    my ($flickr_page, $flickr_title) = @_;
+
+    foreach my $line ($flickr_page) {
+        $line =~ s#href="/photos/[^>]+ class="title">##g;
+        while ($line =~ m#href="(/photos/[^"]+?/in/[^"]+)"#) {
+            my $href = $1;
+            $line =~ s/$href//;
+
+            $href =~ s#/in/#/sizes/o/in/#;
+            $href = "https://www.flickr.com$href";
+            print "$flickr_title: ";
+            parse_get_img($href);
+
+            sleep(1);
+        }
+    }
+}
+
+sub download_photoset($)
+{
+    my $flickr_url = $_[0];
+    my $in_dir = 0;
+    my $has_next_page = 1;
+    my $flickr_title = '';
+
+    # init
+    $photo_count_num = 1;
+
+    while ($has_next_page) {
+        my $flickr_page = get_content($flickr_url);
+        $has_next_page = 0;
+        if ($in_dir == 0) {
+            if ($flickr_page =~ /<title>(.*?) - (an album on Flickr|a set on Flickr)<\/title>/m) {
+                $flickr_title = $1;
+                $flickr_title =~ s/[ \/]/_/g;
+                print "title = $flickr_title\n";
+
+                my $dir_postfix = 0;
+                my $ori_flickr_title = $flickr_title;
+                while ( -e $flickr_title) {
+                    if ( -f "$flickr_title/url.txt") {
+                        open FR, '<', "$flickr_title/url.txt";
+                        chomp (my $test_url = <FR>);
+                        close FR;
+
+                        if ($test_url eq $flickr_url) {
+                            last;
+                        }
+                    }
+                    $flickr_title = "$ori_flickr_title.$dir_postfix";
+                    $dir_postfix++;
+                }
+
+                if ( ! -e $flickr_title) {
+                    mkdir $flickr_title;
+                    chdir $flickr_title;
+                    $in_dir = 1;
+
+                    open FW, '>', 'url.txt';
+                    print FW "$flickr_url\n";
+                    close FW;
+                } else {
+                    print "Find <$flickr_title>, continue to download photos...\n";
+                    chdir $flickr_title;
+                    $in_dir = 1;
+                }
+            } else {
+                print "Photoset title not found.\n";
+                return;
+            }
+        }
+
+        print "=== Go get $flickr_url ===\n";
+        # 
+        # try to find next page link
+        #
+        if ($flickr_page =~ /<span class="this-page">(\d+)<\/span>/m) {
+            my $this_page = $1;
+            my $next_page = $this_page + 1;
+            if ($flickr_page =~ /<a .*?data-track="page-$next_page" href="([^"]+)"/m) {
+                $flickr_url = "https://www.flickr.com$1";
+                $has_next_page = 1;
+            }
+        }
+        parse_page($flickr_page, $flickr_title);
+    }
+    chdir '..';
+}
+
+sub main($)
+{
+    my $target = $_[0];
+
+    if ( -f $target) {
+        open FR, '<', $target;
+        my @urls = <FR>;
+        close FR;
+
+        foreach (@urls) {
+            chomp;
+            download_photoset($_);
+        }
+    } else {
+        download_photoset($target);
+    }
+}
+
+main($ARGV[0]);
+
+__END__

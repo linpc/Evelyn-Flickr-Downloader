@@ -29,10 +29,11 @@ use strict;
 use warnings;
 use LWP::UserAgent;
 
-my $VERSION = '0.1.1';
+our $VERSION = '0.1.2';
 
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
-my $photo_count_num = 1;
+our $photo_count_num = 1;
+our $fetch_tool;
 
 sub get_content($)
 {
@@ -55,11 +56,16 @@ sub parse_get_img($)
     my $content = get_content($url);
 #    $contents =~ s/\n//g;
 #    my ($img_url) = $content =~ /<img src="([^"]+_o.jpg)"/m;
-    my ($img_url) = $content =~ /<img src="(https:\/\/farm[^"]+\.jpg)"/m;
+    my ($img_url) = $content =~ m#<img src="(https://farm[^"]+\.jpg)"#m;
 
     print "[$photo_count_num] img = $img_url\n";
     $photo_count_num++;
-    system 'wget', '-nv', '-c', '-nc', "$img_url";
+
+    if ($fetch_tool eq 'wget') {
+        system 'wget', '-nv', '-c', '-nc', "$img_url";
+    } else {    # curl
+        system 'curl', '-s', '-C', '-', '-O', "$img_url";
+    }
 }
 
 sub parse_page(@)
@@ -153,9 +159,25 @@ sub download_photoset($)
     chdir '..';
 }
 
+sub test_fetch_tool()
+{
+    $fetch_tool = do {
+        if (`which wget` ne '')     { 'wget' }
+        elsif (`which curl` ne '')  { 'curl' }
+        else                        { '' }
+    };
+
+    if ($fetch_tool eq '') {
+        print STDERR 'Error: You must have ``wget\'\' or ``curl\'\' to fetch images', "\n";
+        exit 1;
+    }
+}
+
 sub main($)
 {
     my $target = $_[0];
+
+    test_fetch_tool();
 
     if ( -f $target) {
         open FR, '<', $target;

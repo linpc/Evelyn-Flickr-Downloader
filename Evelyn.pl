@@ -29,7 +29,7 @@ use strict;
 use warnings;
 use LWP::UserAgent;
 
-my $VERSION = '0.1';
+my $VERSION = '0.1.1';
 
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
 my $photo_count_num = 1;
@@ -70,7 +70,7 @@ sub download_photoset($)
 	my $flickr_page = &get_content($flickr_url);
 	$has_next_page = 0;
 	if ($in_dir == 0) {
-	    if ($flickr_page =~ /<title>(.*?) - (a set on Flickr|Flickr 上的相片集)<\/title>/m) {
+	    if ($flickr_page =~ /<title>(.*?) - (an album on Flickr|a set on Flickr)<\/title>/m) {
 		$flickr_title = $1;
 		$flickr_title =~ s/[ \/]/_/g;
 		print "title = $flickr_title\n";
@@ -118,7 +118,7 @@ sub download_photoset($)
 	    my $this_page = $1;
 	    my $next_page = $this_page + 1;
 	    if ($flickr_page =~ /<a .*?data-track="page-$next_page" href="([^"]+)"/m) {
-		$flickr_url = "http://www.flickr.com$1";
+		$flickr_url = "https://www.flickr.com$1";
 		$has_next_page = 1;
 	    }
 	}
@@ -138,7 +138,7 @@ sub parse_page()
 	    $line =~ s/$href//;
 
 	    $href =~ s#/in/#/sizes/o/in/#;
-	    $href = "http://www.flickr.com$href";
+	    $href = "https://www.flickr.com$href";
 	    print "$flickr_title: ";
 	    &parse_get_img($href);
 
@@ -155,6 +155,7 @@ sub get_content($)
     my $ua = LWP::UserAgent->new;
     $ua->timeout(120);
     $ua->agent('Mozilla/5.0');
+    $ua->default_header('Accept-Language' => 'en-US,en;q=0.8');
 
     my $request = new HTTP::Request('GET', $url);
     my $response = $ua->request($request);
@@ -169,7 +170,7 @@ sub parse_get_img($)
     my $content = &get_content($url);
 #    $contents =~ s/\n//g;
 #    my ($img_url) = $content =~ /<img src="([^"]+_o.jpg)"/m;
-    my ($img_url) = $content =~ /<img src="(http:\/\/farm[^"]+\.jpg)"/m;
+    my ($img_url) = $content =~ /<img src="(https:\/\/farm[^"]+\.jpg)"/m;
 
     print "[$photo_count_num] img = $img_url\n";
     $photo_count_num++;

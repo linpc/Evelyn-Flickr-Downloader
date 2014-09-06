@@ -173,7 +173,7 @@ sub test_fetch_tool()
     }
 }
 
-sub main($)
+sub main(@)
 {
     my $target = $_[0];
 
@@ -193,6 +193,6 @@ sub main($)
     }
 }
 
-main($ARGV[0]);
+main(@ARGV);
 
 __END__

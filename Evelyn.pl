@@ -27,9 +27,12 @@
 
 use strict;
 use warnings;
+
+use Getopt::Long;
 use LWP::UserAgent;
 
 our $VERSION = '0.1.2';
+our $PUBDATE = '2014 Jun 1';
 
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
 our $photo_count_num = 1;
@@ -173,8 +176,27 @@ sub test_fetch_tool()
     }
 }
 
+sub print_version_info()
+{
+    print sprintf 'Evelyn Flickr Downloader %s (%s)', $VERSION, $PUBDATE;
+    print "\n",
+          'Copyright (C) 2014 Po-Chien Lin', "\n",
+          'License: FreeBSD', "\n";
+}
+
 sub main(@)
 {
+    my $opt_version = 0;
+
+    GetOptions(
+        'version'       => \$opt_version
+    );
+
+    if ($opt_version == 1) {
+        print_version_info();
+        exit 0;
+    }
+
     my $target = $_[0];
 
     test_fetch_tool();

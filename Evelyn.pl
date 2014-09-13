@@ -184,16 +184,29 @@ sub print_version_info()
           'License: FreeBSD', "\n";
 }
 
+sub usage()
+{
+    print 'Usage', "\n";
+    print '    Evelyn.pl',
+          ' [-v|--version]',
+          ' [-h|--help]', "\n";
+}
+
 sub main(@)
 {
     my $opt_version = 0;
+    my $opt_help = 0;
 
     GetOptions(
-        'version'       => \$opt_version
+        'version'       => \$opt_version,
+        'help'          => \$opt_help
     );
 
     if ($opt_version == 1) {
         print_version_info();
+        exit 0;
+    } elsif ($opt_help == 1) {
+        usage();
         exit 0;
     }
 

@@ -210,7 +210,7 @@ sub main(@)
         exit 0;
     }
 
-    my $target = $_[0];
+    my $target = $ARGV[0];
 
     test_fetch_tool();
 
